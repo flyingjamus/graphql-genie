@@ -1,7 +1,6 @@
-
-import { DocumentNode, GraphQLArgument, GraphQLFieldResolver, GraphQLInputType, GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLType, getNamedType, isEnumType, isInputObjectType, isInputType, isInterfaceType, isListType, isNonNullType, isObjectType, isScalarType, isSpecifiedDirective, isUnionType, print } from 'graphql';
+import { DocumentNode, getNamedType, GraphQLArgument, GraphQLFieldResolver, GraphQLInputType, GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLType, isEnumType, isInputObjectType, isInputType, isInterfaceType, isListType, isNonNullType, isObjectType, isScalarType, isSpecifiedDirective, isUnionType, print } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
-import { IResolvers, SchemaDirectiveVisitor, addResolveFunctionsToSchema, buildSchemaFromTypeDefinitions, makeExecutableSchema } from 'graphql-tools';
+import {addResolversToSchema, buildSchemaFromTypeDefinitions, IResolvers, makeExecutableSchema, SchemaDirectiveVisitor} from 'graphql-tools';
 import GraphQLJSON from 'graphql-type-json';
 import { camelCase, each, find, has, isEmpty, set, values } from 'lodash';
 import pluralize from 'pluralize';
@@ -178,7 +177,7 @@ export class GraphQLSchemaBuilder {
 				storeName: StoreNameDirective
 			},
 			resolverValidationOptions: {
-				requireResolversForResolveType: false
+				requireResolversForResolveType: 'ignore'
 			}
 		});
 
@@ -309,22 +308,22 @@ export class GraphQLSchemaBuilder {
 			this.resolveFunctions[typeName][name] = resolveFn; // save in case type defs changed
 		});
 
-		addResolveFunctionsToSchema({
+		this.schema = addResolversToSchema({
 			schema: this.schema,
 			resolvers: resolverMap,
 			resolverValidationOptions: {
-				requireResolversForResolveType: false
+				requireResolversForResolveType: 'ignore'
 			}
 		});
 		return this.schema;
 	}
 	public setIResolvers = (iResolvers: IResolvers): GraphQLSchema => {
-		this.resolveFunctions = Object.assign(this.resolveFunctions, iResolvers);
-		addResolveFunctionsToSchema({
+		this.resolveFunctions = Object.assign(this.resolveFunctions, iResolvers)
+		this.schema = addResolversToSchema({
 			schema: this.schema,
 			resolvers: iResolvers,
 			resolverValidationOptions: {
-				requireResolversForResolveType: false
+				requireResolversForResolveType: 'ignore'
 			}
 		});
 		return this.schema;

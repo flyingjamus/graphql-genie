@@ -515,7 +515,9 @@ export class GraphQLGenie {
 	}
 
 	public getModelTypes = (): IntrospectionType[] => {
-		return introspectionFromSchema(this.schema, { descriptions: false }).__schema.types.find(t => t.name === 'Node')['possibleTypes'];
+		return introspectionFromSchema(this.schema, { descriptions: false }).__schema.types.filter(
+			v => (v as any).interfaces?.some(v => v.name === 'Node') && v.name !== 'Node'
+		)
 	}
 
 	public getRawData = async (types = [], context?): Promise<any[]> => {
