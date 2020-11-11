@@ -25,7 +25,7 @@ export default [
 			resolve({
 				extensions: ['.mjs', '.js', '.json'],
 				preferBuiltins: true,
-				jsnext: true,
+				jsnext: false,
 				main: true,
 				browser: false
 			}), // so Rollup can find `ms`
@@ -39,7 +39,11 @@ export default [
 					'node_modules/graphql-iso-date/dist/index.js': ['GraphQLDate', 'GraphQLTime', 'GraphQLDateTime']
 				}
 			}), // so Rollup can convert `ms` to an ES module
-			typescript(),
+			typescript(
+				{
+					lib: ['es5', 'es6', 'dom'],
+					"target": "es2015",
+				}),
 			json()
 		],
 		external: ['graphql-subscriptions', 'graphql-tools', 'fortune', 'fortune/lib/adapter/adapters/common', 'lodash', 'graphql', 'graphql/language', 'graphql/execution/values', 'graphql/language/printer', 'graphql/error']

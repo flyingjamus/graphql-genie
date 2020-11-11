@@ -1,10 +1,11 @@
 import { atob, btoa } from 'abab';
 import fortune from 'fortune';
 import { IntrospectionInterfaceType, IntrospectionType } from 'graphql';
-import { each, find, findIndex, forOwn, get, has, isArray, isEmpty, isEqual, isPlainObject, isString, keys, merge, set, toString } from 'lodash';
+import { each, find, findIndex, forOwn, get, has, isArray, isEmpty, isEqual, isPlainObject, isString, keys, merge, orderBy, set, toString } from 'lodash';
 import * as fortuneCommon from 'fortune/lib/adapter/adapters/common';
 import { Connection, DataResolver, DataResolverInputHook, DataResolverOutputHook, Features, FortuneOptions, FortuneRecordTypeDefinitions, GenericObject } from './GraphQLGenieInterfaces';
 import { computeRelations } from './TypeGeneratorUtilities';
+import DataLoader from 'dataloader';
 
 interface FortuneUpdate {
 	id: string;
@@ -12,6 +13,7 @@ interface FortuneUpdate {
 	replace?: object;
 	pull?: object;
 }
+
 export default class FortuneGraph implements DataResolver {
 
 	private fortuneOptions: FortuneOptions;
@@ -22,6 +24,8 @@ export default class FortuneGraph implements DataResolver {
 	private outputHooks: Map<string, DataResolverOutputHook[]>;
 	private store;
 	private transaction;
+	private dataLoaders = new Map<string, DataLoader<any, any>>()
+
 	constructor(fortuneOptions: FortuneOptions, schemaInfo: IntrospectionType[], fortuneRecordTypeDefinitions?: FortuneRecordTypeDefinitions) {
 		this.fortuneOptions = fortuneOptions;
 		if (!this.fortuneOptions || !this.fortuneOptions.hooks) {
@@ -32,7 +36,6 @@ export default class FortuneGraph implements DataResolver {
 		this.inputHooks = new Map<string, DataResolverInputHook[]>();
 		this.outputHooks = new Map<string, DataResolverOutputHook[]>();
 		this.store = this.buildFortune(fortuneRecordTypeDefinitions);
-
 	}
 
 	public computeId = (graphType: string, id?: string): string => {
@@ -172,11 +175,12 @@ export default class FortuneGraph implements DataResolver {
 	}
 
 	public find = async (graphQLTypeName: string, ids?: string[], options?, meta?) => {
-		let results;
+		let graphReturn: any[]
 		let fortuneType: string;
 		if (graphQLTypeName === 'Node') {
 			fortuneType = this.getFortuneTypeName(this.getTypeFromId(ids[0]));
-			results = this.transaction ? await this.transaction.find(fortuneType, ids[0], options, undefined, meta) : await this.store.find(fortuneType, ids[0], options, undefined, meta);
+			const results = this.transaction ? await this.transaction.find(fortuneType, ids[0], options, undefined, meta) : await this.store.find(fortuneType, ids[0], options, undefined, meta);
+			graphReturn = get(results, 'payload.records')
 		} else {
 			fortuneType = this.getFortuneTypeName(graphQLTypeName);
 			// pull the id out of the match options
@@ -188,9 +192,28 @@ export default class FortuneGraph implements DataResolver {
 				ids = isArray(ids) ? ids : [ids];
 			}
 			options = this.generateOptions(options, graphQLTypeName, ids);
-			results = this.transaction ? await this.transaction.find(fortuneType, ids, options, undefined, meta) : await this.store.find(fortuneType, ids, options, undefined, meta);
+			if (!ids || (Object.keys(options).length && (Object.keys(options).length > 1 || !options.match))) {
+				const results = this.transaction
+					? await this.transaction.find(fortuneType, ids, options, undefined, meta)
+					: await this.store.find(fortuneType, ids, options, undefined, meta)
+				graphReturn = get(results, 'payload.records')
+			} else {
+				if (!this.dataLoaders.has(fortuneType)) {
+					this.dataLoaders.set(
+						fortuneType,
+						new DataLoader(async (inputIds: string[]) => {
+							const results = await (this.transaction
+								? this.transaction.find(fortuneType, inputIds, options, undefined, meta)
+								: this.store.find(fortuneType, inputIds, {}, undefined, meta))
+							const realreults = orderBy(get(results, 'payload.records'), v => inputIds.indexOf(v.id))
+							return realreults
+						}, {batchScheduleFn: callback => setTimeout(callback, 0)})
+					)
+				}
+				graphReturn = await this.dataLoaders.get(fortuneType).loadMany(ids)
+			}
 		}
-		let graphReturn: any[] = get(results, 'payload.records');
+
 		if (graphReturn) {
 			graphReturn = graphReturn.map((element) => {
 				element.id = isString(element.id) ? element.id : toString(element.id);
@@ -235,10 +258,14 @@ export default class FortuneGraph implements DataResolver {
 				}
 			}
 			// if one id sent in we just want to return the value not an array
-			graphReturn = ids && ids.length === 1 ? graphReturn[0] : graphReturn;
+			// graphReturn = ids && ids.length === 1 ? graphReturn[0] : graphReturn;
 		}
 		if (!graphReturn) {
-			// console.log('Nothing Found ' + graphQLTypeName + ' ' + JSON.stringify(ids) + ' ' + JSON.stringify(options));
+			console.log('Nothing Found ' + graphQLTypeName + ' ' + JSON.stringify(ids) + ' ' + JSON.stringify(options));
+		}
+		if (graphReturn && graphReturn[0] === null){
+
+			console.log(graphReturn, ids, graphQLTypeName)
 		}
 		return graphReturn;
 

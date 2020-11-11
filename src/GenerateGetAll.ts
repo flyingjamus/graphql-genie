@@ -48,7 +48,7 @@ export class GenerateGetAll implements TypeGenerator {
 			const fieldName = `${camelCase(pluralize(type.name))}`;
 
 			this.fields[fieldName] = {
-				type: `[${type.name}]`,
+				type: `[${type.name}!]!`,
 				args
 			};
 
