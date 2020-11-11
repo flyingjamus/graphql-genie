@@ -57,6 +57,7 @@ export interface DataResolver {
 	getTypeFromId(inputId: string): string;
 	getOriginalIdFromObjectId(inputId: string): string;
 	getLink(graphQLTypeName: string, field: string): string;
+	clearCache(): void;
 }
 
 export interface GenerateConfig {

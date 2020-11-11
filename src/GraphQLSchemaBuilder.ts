@@ -319,7 +319,7 @@ export class GraphQLSchemaBuilder {
 		return this.schema;
 	}
 	public setIResolvers = (iResolvers: IResolvers): GraphQLSchema => {
-		this.resolveFunctions = Object.assign(this.resolveFunctions, iResolvers)
+		this.resolveFunctions = Object.assign(this.resolveFunctions, iResolvers);
 		this.schema = addResolversToSchema({
 			schema: this.schema,
 			resolvers: iResolvers,

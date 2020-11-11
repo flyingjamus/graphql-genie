@@ -46,6 +46,7 @@ export default class FortuneGraph implements DataResolver {
     addInputHook(graphQLTypeName: string, hook: DataResolverInputHook): void;
     beginTransaction: () => Promise<void>;
     endTransaction: () => Promise<void>;
+    clearCache: () => void;
 }
 export {};
 //# sourceMappingURL=FortuneGraph.d.ts.map

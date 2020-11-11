@@ -1,10 +1,36 @@
-import { atob, btoa } from 'abab';
+import {atob, btoa} from 'abab';
 import fortune from 'fortune';
-import { IntrospectionInterfaceType, IntrospectionType } from 'graphql';
-import { each, find, findIndex, forOwn, get, has, isArray, isEmpty, isEqual, isPlainObject, isString, keys, merge, orderBy, set, toString } from 'lodash';
+import {IntrospectionInterfaceType, IntrospectionType} from 'graphql';
+import {
+	each,
+	find,
+	findIndex,
+	forOwn,
+	get,
+	has,
+	isArray,
+	isEmpty,
+	isEqual,
+	isPlainObject,
+	isString,
+	keys,
+	merge,
+	orderBy,
+	set,
+	toString
+} from 'lodash';
 import * as fortuneCommon from 'fortune/lib/adapter/adapters/common';
-import { Connection, DataResolver, DataResolverInputHook, DataResolverOutputHook, Features, FortuneOptions, FortuneRecordTypeDefinitions, GenericObject } from './GraphQLGenieInterfaces';
-import { computeRelations } from './TypeGeneratorUtilities';
+import {
+	Connection,
+	DataResolver,
+	DataResolverInputHook,
+	DataResolverOutputHook,
+	Features,
+	FortuneOptions,
+	FortuneRecordTypeDefinitions,
+	GenericObject
+} from './GraphQLGenieInterfaces';
+import {computeRelations} from './TypeGeneratorUtilities';
 import DataLoader from 'dataloader';
 
 interface FortuneUpdate {
@@ -24,7 +50,7 @@ export default class FortuneGraph implements DataResolver {
 	private outputHooks: Map<string, DataResolverOutputHook[]>;
 	private store;
 	private transaction;
-	private dataLoaders = new Map<string, DataLoader<any, any>>()
+	private dataLoaders = new Map<string, DataLoader<any, any>>();
 
 	constructor(fortuneOptions: FortuneOptions, schemaInfo: IntrospectionType[], fortuneRecordTypeDefinitions?: FortuneRecordTypeDefinitions) {
 		this.fortuneOptions = fortuneOptions;
@@ -162,6 +188,7 @@ export default class FortuneGraph implements DataResolver {
 	}
 
 	public create = async (graphQLTypeName: string, records, meta?) => {
+		this.clearCache();
 		const fortuneType = this.getFortuneTypeName(graphQLTypeName);
 		records['__typename'] = graphQLTypeName;
 
@@ -175,12 +202,12 @@ export default class FortuneGraph implements DataResolver {
 	}
 
 	public find = async (graphQLTypeName: string, ids?: string[], options?, meta?) => {
-		let graphReturn: any[]
+		let graphReturn: any[];
 		let fortuneType: string;
 		if (graphQLTypeName === 'Node') {
 			fortuneType = this.getFortuneTypeName(this.getTypeFromId(ids[0]));
 			const results = this.transaction ? await this.transaction.find(fortuneType, ids[0], options, undefined, meta) : await this.store.find(fortuneType, ids[0], options, undefined, meta);
-			graphReturn = get(results, 'payload.records')
+			graphReturn = get(results, 'payload.records');
 		} else {
 			fortuneType = this.getFortuneTypeName(graphQLTypeName);
 			// pull the id out of the match options
@@ -192,25 +219,24 @@ export default class FortuneGraph implements DataResolver {
 				ids = isArray(ids) ? ids : [ids];
 			}
 			options = this.generateOptions(options, graphQLTypeName, ids);
-			if (!ids || (Object.keys(options).length && (Object.keys(options).length > 1 || !options.match))) {
+			if (!ids || (Object.keys(options).length)) {
 				const results = this.transaction
 					? await this.transaction.find(fortuneType, ids, options, undefined, meta)
-					: await this.store.find(fortuneType, ids, options, undefined, meta)
-				graphReturn = get(results, 'payload.records')
+					: await this.store.find(fortuneType, ids, options, undefined, meta);
+				graphReturn = get(results, 'payload.records');
 			} else {
 				if (!this.dataLoaders.has(fortuneType)) {
 					this.dataLoaders.set(
 						fortuneType,
 						new DataLoader(async (inputIds: string[]) => {
 							const results = await (this.transaction
-								? this.transaction.find(fortuneType, inputIds, options, undefined, meta)
-								: this.store.find(fortuneType, inputIds, {}, undefined, meta))
-							const realreults = orderBy(get(results, 'payload.records'), v => inputIds.indexOf(v.id))
-							return realreults
-						}, {batchScheduleFn: callback => setTimeout(callback, 0)})
-					)
+								? this.transaction.find(fortuneType, inputIds, {}, undefined, meta)
+								: this.store.find(fortuneType, inputIds, {}, undefined, meta));
+							return orderBy(get(results, 'payload.records'), v => inputIds.indexOf(v.id));
+						},  {batchScheduleFn: callback => setTimeout(callback, 10)})
+					);
 				}
-				graphReturn = await this.dataLoaders.get(fortuneType).loadMany(ids)
+				graphReturn = await this.dataLoaders.get(fortuneType).loadMany(ids);
 			}
 		}
 
@@ -258,20 +284,21 @@ export default class FortuneGraph implements DataResolver {
 				}
 			}
 			// if one id sent in we just want to return the value not an array
-			// graphReturn = ids && ids.length === 1 ? graphReturn[0] : graphReturn;
+			graphReturn = ids && ids.length === 1 ? graphReturn[0] : graphReturn;
 		}
 		if (!graphReturn) {
 			console.log('Nothing Found ' + graphQLTypeName + ' ' + JSON.stringify(ids) + ' ' + JSON.stringify(options));
 		}
-		if (graphReturn && graphReturn[0] === null){
+		if (graphReturn && graphReturn[0] === null) {
 
-			console.log(graphReturn, ids, graphQLTypeName)
+			console.log(graphReturn, ids, graphQLTypeName);
 		}
 		return graphReturn;
 
 	}
 
 	public update = async (graphQLTypeName: string, records, meta?, options?: object) => {
+		this.clearCache();
 		const fortuneType = this.getFortuneTypeName(graphQLTypeName);
 		let updates = records;
 		if (!options || !options['fortuneFormatted']) {
@@ -283,6 +310,7 @@ export default class FortuneGraph implements DataResolver {
 	}
 
 	public delete = async (graphQLTypeName: string, ids?: string[], meta?) => {
+		this.clearCache();
 		const fortuneType = this.getFortuneTypeName(graphQLTypeName);
 		if (ids.length > 0) {
 			this.transaction ? await this.transaction.delete(fortuneType, ids, undefined, meta) : await this.store.delete(fortuneType, ids, undefined, meta);
@@ -673,5 +701,9 @@ export default class FortuneGraph implements DataResolver {
 			await this.store.endTransaction();
 		}
 		this.transaction = null;
+	}
+
+	public clearCache = () => {
+		this.dataLoaders.clear();
 	}
 }
