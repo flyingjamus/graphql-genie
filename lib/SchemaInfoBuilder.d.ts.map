@@ -1,0 +1,1 @@
+{"version":3,"file":"SchemaInfoBuilder.d.ts","sourceRoot":"","sources":["src/SchemaInfoBuilder.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,aAAa,EAAE,iBAAiB,EAA2B,MAAM,SAAS,CAAC;AAGpF,MAAM,CAAC,OAAO,OAAO,iBAAiB;IAErC,OAAO,CAAC,MAAM,CAAgB;IAC9B,OAAO,CAAC,UAAU,CAAsB;gBAE5B,MAAM,EAAE,aAAa;IAI1B,aAAa,IAAI,iBAAiB,EAAE;IAO3C,OAAO,CAAC,mBAAmB;IAY3B,OAAO,CAAC,eAAe;CAyCvB"}
