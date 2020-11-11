@@ -61,6 +61,8 @@
 		]
 	},
 	"devDependencies": {
+		"@graphql-tools/schema": "^7.0.0",
+		"@graphql-tools/utils": "^7.0.2",
 		"@types/jest": "^24.0.18",
 		"@types/lodash": "^4.14.141",
 		"@types/node": "^11.13.21",
@@ -74,7 +76,6 @@
 		"graphql-fields": "^2.0.1",
 		"graphql-subscriptions": "^1.0.0",
 		"graphql-tag": "^2.10.1",
-		"graphql-tools": "^7.0.1",
 		"jest": "^24.9.0",
 		"lodash": "^4.17.15",
 		"rollup": "^1.22.0",
@@ -92,9 +93,10 @@
 		"typescript": "^3.6.3"
 	},
 	"peerDependencies": {
+		"@graphql-tools/utils": "^7.0.2",
+		"@graphql-tools/schema": "^7.0.0",
 		"fortune": "^5.0.0",
 		"graphql": "^15.4.0",
-		"graphql-tools": "^7.0.1",
 		"lodash": "^4.0.0"
 	},
 	"dependencies": {

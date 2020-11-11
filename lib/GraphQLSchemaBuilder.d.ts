@@ -1,5 +1,5 @@
 import { DocumentNode, GraphQLFieldResolver, GraphQLSchema, GraphQLType } from 'graphql';
-import { IResolvers } from 'graphql-tools';
+import { IResolvers } from '@graphql-tools/utils';
 import { GenerateConfig } from './GraphQLGenieInterfaces';
 export declare class GraphQLSchemaBuilder {
     private schema;
