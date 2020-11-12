@@ -287,11 +287,10 @@ export default class FortuneGraph implements DataResolver {
 			graphReturn = ids && ids.length === 1 ? graphReturn[0] : graphReturn;
 		}
 		if (!graphReturn) {
-			console.log('Nothing Found ' + graphQLTypeName + ' ' + JSON.stringify(ids) + ' ' + JSON.stringify(options));
+			// console.log('Nothing Found ' + graphQLTypeName + ' ' + JSON.stringify(ids) + ' ' + JSON.stringify(options));
 		}
 		if (graphReturn && graphReturn[0] === null) {
-
-			console.log(graphReturn, ids, graphQLTypeName);
+			// console.log(graphReturn, ids, graphQLTypeName);
 		}
 		return graphReturn;
 
